@@ -9,13 +9,13 @@ interface CalendarEvent {
 interface CalendarDay {
   id: number;
   date: Date;
-  numberOfEvents: number | undefined;
-  totalDuration: number | undefined;
-  longestEvent: string | undefined;
+  numberOfEvents?: number;
+  totalDuration?: number;
+  longestEvent?: string;
   eventsArray: CalendarEvent[] | [];
 }
 
-function getWeek() {
+function getWeek(): CalendarDay[] {
   const currentDate = new Date();
   let week = [];
 
@@ -53,23 +53,41 @@ function getLongestEvent(eventArr: CalendarEvent[]): string | undefined {
 const CalendarSummary: React.FunctionComponent = () => {
   const [events, setEvents] = useState<CalendarDay[] | []>([]);
 
-  useEffect(() => {
-    setEvents(getWeek());
-    events.map((day) => {
-      return getCalendarEvents(day.date)
-        .then((res) => {
-          setEvents((old) => ({
-            ...old,
-            eventsArray: res,
-            numberOfEvents: res.length,
-            totalDuration: getTotalDuration(res),
-            longestEvent: getLongestEvent(res),
-          }));
-        })
-        .catch((rej) => console.error(rej));
-    });
-  }, []);
   console.log(events);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const promises: Promise<void>[] = [];
+        const week = getWeek();
+        week.forEach((day) => {
+          const promise = getCalendarEvents(day.date)
+            .then((res) => {
+              setEvents((oldEvents) =>
+                oldEvents.map((oldEvent) =>
+                  oldEvent.id === day.id
+                    ? {
+                        ...oldEvent,
+                        eventsArray: res,
+                        numberOfEvents: res.length,
+                        totalDuration: getTotalDuration(res),
+                        longestEvent: getLongestEvent(res),
+                      }
+                    : oldEvent
+                )
+              );
+            })
+            .catch((rej) => console.error(rej));
+
+          promises.push(promise);
+        });
+        await Promise.all(promises);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchData();
+  }, []);
 
   return (
     <div>
@@ -84,14 +102,14 @@ const CalendarSummary: React.FunctionComponent = () => {
           </tr>
         </thead>
         <tbody>
-          {/* {events.map((e) => (
+          {events.map((e) => (
             <tr key={e.id}>
               <td>{e.date.toISOString().slice(0, 10)}</td>
               <td>{e.numberOfEvents}</td>
               <td>{e.totalDuration}</td>
               <td>{e.longestEvent}</td>
             </tr>
-          ))} */}
+          ))}
         </tbody>
       </table>
     </div>
