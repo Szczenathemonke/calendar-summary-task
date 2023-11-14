@@ -53,37 +53,40 @@ function getLongestEvent(eventArr: CalendarEvent[]): string | undefined {
 const CalendarSummary: React.FunctionComponent = () => {
   const [events, setEvents] = useState<CalendarDay[] | []>([]);
 
-  console.log(events);
+  const week = getWeek();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const promises: Promise<void>[] = [];
-        const week = getWeek();
-        week.forEach((day) => {
-          const promise = getCalendarEvents(day.date)
-            .then((res) => {
-              setEvents((oldEvents) =>
-                oldEvents.map((oldEvent) =>
-                  oldEvent.id === day.id
-                    ? {
-                        ...oldEvent,
-                        eventsArray: res,
-                        numberOfEvents: res.length,
-                        totalDuration: getTotalDuration(res),
-                        longestEvent: getLongestEvent(res),
-                      }
-                    : oldEvent
-                )
-              );
-            })
-            .catch((rej) => console.error(rej));
+        const updatedEvents = await Promise.all(
+          week.map(async (day) => {
+            try {
+              const res = await getCalendarEvents(day.date);
 
-          promises.push(promise);
-        });
-        await Promise.all(promises);
-      } catch (err) {
-        console.error(err);
+              return {
+                id: day.id,
+                date: day.date,
+                eventsArray: res,
+                numberOfEvents: res.length,
+                totalDuration: getTotalDuration(res),
+                longestEvent: getLongestEvent(res),
+              };
+            } catch (error) {
+              console.error(error);
+              return {
+                id: day.id,
+                date: day.date,
+                eventsArray: [],
+                numberOfEvents: 0,
+                totalDuration: 0,
+                longestEvent: undefined,
+              };
+            }
+          })
+        );
+        setEvents(updatedEvents);
+      } catch (error) {
+        console.error(error);
       }
     };
     fetchData();
@@ -104,9 +107,11 @@ const CalendarSummary: React.FunctionComponent = () => {
         <tbody>
           {events.map((e) => (
             <tr key={e.id}>
-              <td>{e.date.toISOString().slice(0, 10)}</td>
-              <td>{e.numberOfEvents}</td>
-              <td>{e.totalDuration}</td>
+              <td className="text-center">
+                {e.date.toISOString().slice(0, 10)}
+              </td>
+              <td className="text-center">{e.numberOfEvents}</td>
+              <td className="text-center">{e.totalDuration}</td>
               <td>{e.longestEvent}</td>
             </tr>
           ))}
@@ -117,43 +122,3 @@ const CalendarSummary: React.FunctionComponent = () => {
 };
 
 export default CalendarSummary;
-
-// const week = getWeek();
-
-//   useEffect(() => {
-//     week.map((day) =>
-//       getCalendarEvents(day.date)
-//         .then((res) => {
-//           day.eventsArray = res;
-//           day.numberOfEvents = res.length;
-//           day.totalDuration = getTotalDuration(res);
-//           day.longestEvent = getLongestEvent(res);
-//         })
-//         .catch((rej) => console.error(rej))
-//     );
-//   }, [week]);
-//   console.log(week);
-
-// const [loading, setLoading] = useState<boolean>(true);
-
-// useEffect(() => {
-//   setEvents(getWeek());
-//   events.map((day) =>
-//     getCalendarEvents(day.date)
-//       .then((res) => {
-//         setEvents((old) => ({
-//           ...old,
-//           eventsArray: res,
-//           numberOfEvents: res.length,
-//           totalDuration: getTotalDuration(res),
-//           longestEvent: getLongestEvent(res),
-//         }));
-//       })
-//       .catch((rej) => console.error(rej))
-//       .finally(() => setLoading(false))
-//   );
-//   if (loading) {
-
-//     events.map((day) => getCalendarEvents(day.date));
-//   }
-// }, []);

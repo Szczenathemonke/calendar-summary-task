@@ -1,7 +1,19 @@
 table,
-thead,
-tbody,
 th,
-tr {
-  border: 1px solid black;
+td {
+  padding: 4px;
+  border: 1px solid #dddddd;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 100%;
+  background-color: transparent;
+}
+.text-center {
+  text-align: center;
+}
+tbody tr:nth-child(even) {
+  background-color: #eeeeee;
 }
